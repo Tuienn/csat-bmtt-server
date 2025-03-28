@@ -10,6 +10,7 @@
 #include <nlohmann/json.hpp>
 
 using boost::asio::ip::tcp;
+using json = nlohmann::json;
 
 // Hàm xử lý phiên làm việc cho mỗi kết nối
 void session(tcp::socket socket) {
@@ -109,62 +110,6 @@ void session(tcp::socket socket) {
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
     }
-}
-
-// Helper function to resolve HTTP method
-Method resolveMethod(const std::string& method) {
-    if (method == "GET") return Method::GET;
-    if (method == "POST") return Method::POST;
-    if (method == "OPTIONS") return Method::OPTIONS;
-    return Method::UNKNOWN;
-}
-
-// Helper function to resolve endpoint
-Endpoint resolveEndpoint(const std::string& endpoint) {
-    if (endpoint == "/auth/login") return Endpoint::AUTH_LOGIN;
-    if (endpoint == "/auth/register") return Endpoint::AUTH_REGISTER;
-    if (endpoint == "/users/get-all") return Endpoint::USERS_GET_ALL;
-    return Endpoint::UNKNOWN;
-}
-
-// Helper function to send JSON response
-void sendJsonResponse(tcp::socket& socket, const json& response, const std::string& cors_headers) {
-    std::string json_response = response.dump();
-    std::string response_message = 
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: application/json\r\n"
-        "Content-Length: " + std::to_string(json_response.length()) + "\r\n" +
-        cors_headers +
-        "\r\n" + 
-        json_response;
-
-    boost::asio::write(socket, boost::asio::buffer(response_message));
-}
-
-// Helper function to send error response
-void sendErrorResponse(tcp::socket& socket, const std::string& error_message, const std::string& cors_headers) {
-    std::string error_json = "{\"error\":\"" + error_message + "\"}";
-    std::string response = 
-        "HTTP/1.1 400 Bad Request\r\n"
-        "Content-Type: application/json\r\n"
-        "Content-Length: " + std::to_string(error_json.length()) + "\r\n" +
-        cors_headers +
-        "\r\n" + 
-        error_json;
-    boost::asio::write(socket, boost::asio::buffer(response));
-}
-
-// Helper function to send not found response
-void sendNotFoundResponse(tcp::socket& socket, const std::string& cors_headers) {
-    std::string not_found = "Not Found";
-    std::string response = 
-        "HTTP/1.1 404 Not Found\r\n"
-        "Content-Type: text/plain\r\n"
-        "Content-Length: " + std::to_string(not_found.length()) + "\r\n" +
-        cors_headers + 
-        "\r\n" +
-        not_found;
-    boost::asio::write(socket, boost::asio::buffer(response));
 }
 
 // Hàm khởi tạo server
