@@ -2,6 +2,7 @@
 #define ROUTER_HPP
 
 #include <string>
+#include <boost/asio.hpp>
 #include "http.hpp"
 
 // Enumerations for endpoints
