@@ -1,0 +1,3 @@
+POST auth/login {username, password} -> {message, isSuccess}
+POST auth/register {username, password} -> {message, isSuccess, id}
+GET users/get-all -> {message, isSuccess, users: {id, username}[]
