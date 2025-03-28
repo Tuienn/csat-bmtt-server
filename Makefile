@@ -4,13 +4,32 @@ LDFLAGS = -lboost_system -lsqlite3 -lpthread
 
 SRC_DIR = src
 INCLUDE_DIR = include
-SOURCES = $(SRC_DIR)/main.cpp $(SRC_DIR)/server.cpp $(SRC_DIR)/database.cpp $(SRC_DIR)/users.cpp
+OBJ_DIR = obj
+
+# Source files
+SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
+# Object files
+OBJECTS = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SOURCES))
+
 EXEC = server
 
-$(EXEC): $(SOURCES)
+# Create build directory if it doesn't exist
+$(shell mkdir -p $(OBJ_DIR))
+
+# Main target
+$(EXEC): $(OBJECTS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
-.PHONY: clean
+# Rule to compile each source file to an object file
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+.PHONY: clean run
+
+# Clean build artifacts
 clean:
-	rm -f $(EXEC)
+	rm -rf $(OBJ_DIR) $(EXEC)
+
+# Run the server
+run: $(EXEC)
+	./$(EXEC)

@@ -1,30 +1,13 @@
 #include "server.hpp"
-#include "users.hpp"
+#include "http.hpp"
+#include "router.hpp"
 #include <boost/asio.hpp>
 #include <iostream>
 #include <thread>
 #include <string>
-#include <nlohmann/json.hpp>
+#include <vector>
 
 using boost::asio::ip::tcp;
-using json = nlohmann::json;
-
-// Hàm để phân tích cú pháp JSON từ yêu cầu HTTP POST
-json parse_json_from_request(const std::string& request) {
-    size_t body_start = request.find("\r\n\r\n");
-    if (body_start != std::string::npos) {
-        std::string body = request.substr(body_start + 4); // Bỏ qua header
-        try {
-            if (!body.empty()) {
-                std::cout << "Request body: " << body << std::endl;  // Debug output
-                return json::parse(body);  // Parse dữ liệu JSON
-            }
-        } catch (const json::parse_error& e) {
-            std::cerr << "JSON parsing error: " << e.what() << std::endl;
-        }
-    }
-    return json();  // Nếu không tìm thấy phần thân, trả về JSON rỗng
-}
 
 // Hàm xử lý phiên làm việc cho mỗi kết nối
 void session(tcp::socket socket) {
@@ -95,14 +78,9 @@ void session(tcp::socket socket) {
 
         // Full request with body
         full_request = request_line + "\r\n" + full_request + "\r\n\r\n" + body;
-
-        // Thêm CORS headers vào phản hồi
-        std::string cors_headers = 
-            "Access-Control-Allow-Origin: *\r\n"   // Cho phép tất cả nguồn (origin)
-            "Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS\r\n" // Các phương thức HTTP chấp nhận
-            // "Access-Control-Allow-Headers: Content-Type, Authorization\r\n" // Các header cho phép
-            "Access-Control-Allow-Headers: Content-Type, Authorization, ngrok-skip-browser-warning\r\n" // Các header cho phép
-            "Access-Control-Max-Age: 86400\r\n"; // Cache preflight response for 24 hours
+        
+        // Get CORS headers
+        std::string cors_headers = get_cors_headers();
         
         // Extract HTTP method and endpoint
         std::string http_method;
@@ -119,80 +97,13 @@ void session(tcp::socket socket) {
             }
         }
         
-        // Handle different request methods with switch-case
-        switch (resolveMethod(http_method)) {
-            case Method::OPTIONS: {
-                // Handle OPTIONS request for CORS preflight
-                std::string response = 
-                    "HTTP/1.1 204 No Content\r\n" +
-                    cors_headers +
-                    "Content-Length: 0\r\n\r\n";
-                boost::asio::write(socket, boost::asio::buffer(response));
-                break;
-            }
-            
-            case Method::GET: {
-                // Handle GET endpoints
-                switch (resolveEndpoint(endpoint)) {
-                    case Endpoint::USERS_GET_ALL: {
-                        // Lấy danh sách tất cả người dùng
-                        json response = get_all_users();
-                        sendJsonResponse(socket, response, cors_headers);
-                        break;
-                    }
-                    
-                    default: {
-                        // Endpoint không được hỗ trợ
-                        sendNotFoundResponse(socket, cors_headers);
-                        break;
-                    }
-                }
-                break;
-            }
-            
-            case Method::POST: {
-                // Handle POST endpoints
-                try {
-                    json request_json = json::parse(body);
-                    
-                    switch (resolveEndpoint(endpoint)) {
-                        case Endpoint::AUTH_LOGIN: {
-                            // Đăng nhập
-                            std::string username = request_json["username"];
-                            std::string password = request_json["password"];
-                            json response = login_response(username, password);
-                            sendJsonResponse(socket, response, cors_headers);
-                            break;
-                        }
-                        
-                        case Endpoint::AUTH_REGISTER: {
-                            // Đăng ký
-                            std::string username = request_json["username"];
-                            std::string password = request_json["password"];
-                            json response = register_response(username, password);
-                            sendJsonResponse(socket, response, cors_headers);
-                            break;
-                        }
-                        
-                        default: {
-                            // Endpoint không được hỗ trợ
-                            sendNotFoundResponse(socket, cors_headers);
-                            break;
-                        }
-                    }
-                } catch (const json::exception& e) {
-                    std::cerr << "JSON error: " << e.what() << std::endl;
-                    sendErrorResponse(socket, "Invalid JSON format", cors_headers);
-                }
-                break;
-            }
-            
-            default: {
-                // Phương thức không được hỗ trợ
-                sendNotFoundResponse(socket, cors_headers);
-                break;
-            }
-        }
+        // Resolve the method and endpoint
+        Method method = resolveMethod(http_method);
+        Endpoint endp = resolveEndpoint(endpoint);
+        
+        // Route the request to appropriate handler
+        route_request(socket, method, endp, body, cors_headers);
+        
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
     }
@@ -259,6 +170,8 @@ void start_server() {
     try {
         boost::asio::io_context io_context;
         tcp::acceptor acceptor(io_context, tcp::endpoint(tcp::v4(), 8080));
+
+        std::cout << "Server started on port 8080" << std::endl;
 
         while (true) {
             tcp::socket socket(io_context);
