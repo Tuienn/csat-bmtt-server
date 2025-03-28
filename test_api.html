@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #f1f1f1;
+            border: 1px solid #ccc;
+        }
+        .tab.active {
+            background-color: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        #response {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>API Test</h1>
+    
+    <div class="tabs">
+        <div class="tab active" data-tab="login">Login</div>
+        <div class="tab" data-tab="register">Register</div>
+        <div class="tab" data-tab="users">Users List</div>
+    </div>
+    
+    <div id="login-tab" class="tab-content active">
+        <h2>Login</h2>
+        <div class="form-group">
+            <label for="login-username">Username:</label>
+            <input type="text" id="login-username" value="testuser">
+        </div>
+        <div class="form-group">
+            <label for="login-password">Password:</label>
+            <input type="password" id="login-password" value="password123">
+        </div>
+        <button id="loginButton">Login</button>
+    </div>
+    
+    <div id="register-tab" class="tab-content">
+        <h2>Register</h2>
+        <div class="form-group">
+            <label for="register-username">Username:</label>
+            <input type="text" id="register-username" value="newuser">
+        </div>
+        <div class="form-group">
+            <label for="register-password">Password:</label>
+            <input type="password" id="register-password" value="newpassword">
+        </div>
+        <button id="registerButton">Register</button>
+    </div>
+    
+    <div id="users-tab" class="tab-content">
+        <h2>Users List</h2>
+        <button id="getUsersButton">Get All Users</button>
+        <div id="usersTable"></div>
+    </div>
+    
+    <h2>Response:</h2>
+    <div id="response">No response yet</div>
+
+    <script>
+        // Tab functionality
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Remove active class from all tabs and contents
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                // Add active class to clicked tab
+                this.classList.add('active');
+                
+                // Show corresponding content
+                const tabName = this.getAttribute('data-tab');
+                document.getElementById(tabName + '-tab').classList.add('active');
+            });
+        });
+
+        // Login functionality
+        document.getElementById('loginButton').addEventListener('click', function() {
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            
+            // Clear previous response
+            document.getElementById('response').textContent = 'Sending login request...';
+            
+            // Create the request payload
+            const data = {
+                username: username,
+                password: password
+            };
+            
+            console.log('Sending data:', data);
+            
+            // Send the request
+            fetch('http://localhost:8080/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                document.getElementById('response').textContent = JSON.stringify(data, null, 2);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('response').textContent = 'Error: ' + error.message;
+            });
+        });
+        
+        // Register functionality
+        document.getElementById('registerButton').addEventListener('click', function() {
+            const username = document.getElementById('register-username').value;
+            const password = document.getElementById('register-password').value;
+            
+            // Clear previous response
+            document.getElementById('response').textContent = 'Sending registration request...';
+            
+            // Create the request payload
+            const data = {
+                username: username,
+                password: password
+            };
+            
+            console.log('Sending registration data:', data);
+            
+            // Send the request
+            fetch('http://localhost:8080/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                document.getElementById('response').textContent = JSON.stringify(data, null, 2);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('response').textContent = 'Error: ' + error.message;
+            });
+        });
+        
+        // Get All Users functionality
+        document.getElementById('getUsersButton').addEventListener('click', function() {
+            // Clear previous response
+            document.getElementById('response').textContent = 'Fetching users...';
+            document.getElementById('usersTable').innerHTML = '';
+            
+            // Send the GET request
+            fetch('http://localhost:8080/users/get-all')
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                document.getElementById('response').textContent = JSON.stringify(data, null, 2);
+                
+                // Display users in a table if successful
+                if (data.isSuccess && data.users && data.users.length > 0) {
+                    const table = document.createElement('table');
+                    
+                    // Create table header
+                    const thead = document.createElement('thead');
+                    const headerRow = document.createElement('tr');
+                    const idHeader = document.createElement('th');
+                    idHeader.textContent = 'ID';
+                    const usernameHeader = document.createElement('th');
+                    usernameHeader.textContent = 'Username';
+                    
+                    headerRow.appendChild(idHeader);
+                    headerRow.appendChild(usernameHeader);
+                    thead.appendChild(headerRow);
+                    table.appendChild(thead);
+                    
+                    // Create table body
+                    const tbody = document.createElement('tbody');
+                    data.users.forEach(user => {
+                        const row = document.createElement('tr');
+                        
+                        const idCell = document.createElement('td');
+                        idCell.textContent = user.id;
+                        
+                        const usernameCell = document.createElement('td');
+                        usernameCell.textContent = user.username;
+                        
+                        row.appendChild(idCell);
+                        row.appendChild(usernameCell);
+                        tbody.appendChild(row);
+                    });
+                    
+                    table.appendChild(tbody);
+                    document.getElementById('usersTable').appendChild(table);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('response').textContent = 'Error: ' + error.message;
+            });
+        });
+    </script>
+</body>
+</html> 
