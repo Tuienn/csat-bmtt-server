@@ -100,7 +100,8 @@ void session(tcp::socket socket) {
         std::string cors_headers = 
             "Access-Control-Allow-Origin: *\r\n"   // Cho phép tất cả nguồn (origin)
             "Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS\r\n" // Các phương thức HTTP chấp nhận
-            "Access-Control-Allow-Headers: Content-Type, Authorization\r\n" // Các header cho phép
+            // "Access-Control-Allow-Headers: Content-Type, Authorization\r\n" // Các header cho phép
+            "Access-Control-Allow-Headers: Content-Type, Authorization, ngrok-skip-browser-warning\r\n" // Các header cho phép
             "Access-Control-Max-Age: 86400\r\n"; // Cache preflight response for 24 hours
         
         // Extract HTTP method and endpoint
