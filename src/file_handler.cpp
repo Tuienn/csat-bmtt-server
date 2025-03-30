@@ -31,8 +31,9 @@ bool FileHandler::saveFile(const std::string& filename, const std::vector<char>&
             return false;
         }
 
-        // Create the full file path
-        std::filesystem::path filePath = uploadDirectory / filename;
+        // Create the full file path by converting strings to filesystem::path
+        std::filesystem::path dirPath(uploadDirectory);
+        std::filesystem::path filePath = dirPath / filename;
 
         // Write the file
         std::ofstream file(filePath, std::ios::binary);
