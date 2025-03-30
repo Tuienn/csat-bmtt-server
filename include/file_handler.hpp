@@ -19,6 +19,9 @@ public:
     // Create upload directory if it doesn't exist
     bool createUploadDirectory();
 
+    // Get maximum allowed file size (10MB)
+    static constexpr size_t MAX_FILE_SIZE = 10 * 1024 * 1024;
+
 private:
     std::string uploadDirectory;
 };
