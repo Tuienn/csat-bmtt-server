@@ -10,6 +10,7 @@ enum class Endpoint {
     AUTH_LOGIN,
     AUTH_REGISTER,
     USERS_GET_ALL,
+    FILE_UPLOAD,
     UNKNOWN
 };
 
