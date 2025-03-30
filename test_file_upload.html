@@ -106,7 +106,7 @@
     <body>
         <div class="container">
             <h1>File Upload Test</h1>
-            <form class="upload-form" id="uploadForm">
+            <div class="upload-form">
                 <div
                     class="file-input-container"
                     onclick="document.getElementById('fileInput').click()"
@@ -120,10 +120,10 @@
                     <p class="file-info">Maximum file size: 10MB</p>
                     <div class="selected-file" id="selectedFile"></div>
                 </div>
-                <button type="submit" id="uploadButton" disabled>
+                <button type="button" id="uploadButton" disabled>
                     Upload File
                 </button>
-            </form>
+            </div>
             <div class="progress-container" id="progressContainer">
                 <div class="progress-bar">
                     <div class="progress" id="progressBar"></div>
@@ -133,7 +133,6 @@
         </div>
 
         <script>
-            const form = document.getElementById("uploadForm");
             const fileInput = document.getElementById("fileInput");
             const uploadButton = document.getElementById("uploadButton");
             const selectedFile = document.getElementById("selectedFile");
@@ -190,18 +189,14 @@
                 }
             }
 
-            // Handle form submission
-            form.addEventListener("submit", async (e) => {
-                e.preventDefault();
-
+            // Handle file upload
+            uploadButton.addEventListener("click", async () => {
                 const file = fileInput.files[0];
                 if (!file || !validateFile(file)) return;
 
-                // Create FormData
                 const formData = new FormData();
                 formData.append("file", file);
 
-                // Show progress bar
                 progressContainer.style.display = "block";
                 progressBar.style.width = "0%";
                 status.style.display = "none";
@@ -216,9 +211,12 @@
                         }
                     );
 
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+
                     const data = await response.json();
 
-                    // Show status message
                     status.style.display = "block";
                     if (data.success) {
                         status.className = "success";
@@ -237,7 +235,7 @@
                 }
             });
 
-            // Handle drag and drop
+            // Drag and drop
             const dropZone = document.querySelector(".file-input-container");
 
             ["dragenter", "dragover", "dragleave", "drop"].forEach(
@@ -255,30 +253,11 @@
                 e.stopPropagation();
             }
 
-            ["dragenter", "dragover"].forEach((eventName) => {
-                dropZone.addEventListener(eventName, highlight, false);
-            });
-
-            ["dragleave", "drop"].forEach((eventName) => {
-                dropZone.addEventListener(eventName, unhighlight, false);
-            });
-
-            function highlight(e) {
-                dropZone.style.borderColor = "#4CAF50";
-            }
-
-            function unhighlight(e) {
-                dropZone.style.borderColor = "#ccc";
-            }
-
-            dropZone.addEventListener("drop", handleDrop, false);
-
-            function handleDrop(e) {
+            dropZone.addEventListener("drop", (e) => {
                 const dt = e.dataTransfer;
-                const files = dt.files;
-                fileInput.files = files;
+                fileInput.files = dt.files;
                 updateSelectedFile();
-            }
+            });
         </script>
     </body>
 </html>

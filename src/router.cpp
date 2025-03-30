@@ -17,37 +17,87 @@ Endpoint resolveEndpoint(const std::string& endpoint) {
 }
 
 // Helper function to parse multipart form data
+// std::pair<std::string, std::vector<char>> parseMultipartFormData(const std::string& body, const std::string& boundary) {
+//     std::string filename;
+//     std::vector<char> fileData;
+    
+//     // Find the first boundary
+//     size_t pos = body.find(boundary);
+//     if (pos == std::string::npos) {
+//         return {filename, fileData};
+//     }
+    
+//     // Skip the first boundary and find the headers
+//     pos += boundary.length();
+//     size_t header_end = body.find("\r\n\r\n", pos);
+//     if (header_end == std::string::npos) {
+//         return {filename, fileData};
+//     }
+    
+//     // Extract filename from headers
+//     std::string headers = body.substr(pos, header_end - pos);
+//     size_t filename_pos = headers.find("filename=\"");
+//     if (filename_pos != std::string::npos) {
+//         size_t filename_end = headers.find("\"", filename_pos + 10);
+//         if (filename_end != std::string::npos) {
+//             filename = headers.substr(filename_pos + 10, filename_end - filename_pos - 10);
+//         }
+//     }
+    
+//     // Find the start of file data (after headers)
+//     size_t data_start = header_end + 4;
+    
+//     // Find the next boundary
+//     size_t data_end = body.find(boundary, data_start);
+//     if (data_end == std::string::npos) {
+//         return {filename, fileData};
+//     }
+    
+//     // Extract file data (excluding the boundary)
+//     std::string file_content = body.substr(data_start, data_end - data_start - 2); // -2 for \r\n
+//     fileData.assign(file_content.begin(), file_content.end());
+    
+//     return {filename, fileData};
+// }
 std::pair<std::string, std::vector<char>> parseMultipartFormData(const std::string& body, const std::string& boundary) {
     std::string filename;
     std::vector<char> fileData;
     
-    // Find the file part in the multipart data
-    size_t pos = body.find(boundary);
-    if (pos != std::string::npos) {
-        // Find the filename in the headers
-        size_t filename_pos = body.find("filename=\"", pos);
-        if (filename_pos != std::string::npos) {
-            size_t filename_end = body.find("\"", filename_pos + 10);
-            if (filename_end != std::string::npos) {
-                filename = body.substr(filename_pos + 10, filename_end - filename_pos - 10);
-            }
-        }
-        
-        // Find the start of file data (after headers)
-        size_t data_start = body.find("\r\n\r\n", pos);
-        if (data_start != std::string::npos) {
-            data_start += 4;
-            size_t data_end = body.find(boundary, data_start);
-            if (data_end != std::string::npos) {
-                // Extract file data
-                std::string file_content = body.substr(data_start, data_end - data_start - 2); // -2 for \r\n
-                fileData.assign(file_content.begin(), file_content.end());
-            }
+    // Tìm vị trí bắt đầu dữ liệu
+    size_t header_end = body.find("\r\n\r\n");
+    if (header_end == std::string::npos) {
+        return {filename, fileData};
+    }
+    
+    // Trích xuất tên file từ header
+    size_t filename_pos = body.find("filename=\"");
+    if (filename_pos != std::string::npos) {
+        size_t filename_end = body.find("\"", filename_pos + 10);
+        if (filename_end != std::string::npos) {
+            filename = body.substr(filename_pos + 10, filename_end - filename_pos - 10);
         }
     }
     
+    // Xác định phần dữ liệu file (sau \r\n\r\n)
+    size_t data_start = header_end + 4;
+    size_t data_end = body.rfind("\r\n--" + boundary); // Tìm kết thúc thực sự
+    
+    if (data_end == std::string::npos) {
+        return {filename, fileData};
+    }
+    
+    // Loại bỏ \r\n nếu có trước boundary
+    while (data_end > data_start && (body[data_end - 1] == '\r' || body[data_end - 1] == '\n')) {
+        --data_end;
+    }
+    
+    // Trích xuất dữ liệu file
+    fileData.assign(body.begin() + data_start, body.begin() + data_end);
+    
     return {filename, fileData};
 }
+
+
 
 void route_request(
     boost::asio::ip::tcp::socket& socket, 
